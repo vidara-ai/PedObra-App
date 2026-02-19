@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Check, Loader2, Key, Shield, User as UserIcon, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { User, UserRole } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const UsuariosPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user: currentUser, role: currentRole, status } = useAuth();
   const [view, setView] = useState<'list' | 'create'>('list');
   const [users, setUsers] = useState<User[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -22,27 +24,11 @@ const UsuariosPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-      if (!currentUser) {
-        navigate('/');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (!profile || profile.role !== 'admin') {
-        navigate('/');
-      }
-    };
-
-    checkAccess();
-  }, [navigate]);
+    // CORREÇÃO: Centralizado no AuthContext. Não chamar auth.getUser() aqui.
+    if (status === 'unauthenticated' || (status === 'authenticated' && currentRole !== 'admin')) {
+      navigate('/');
+    }
+  }, [status, currentRole, navigate]);
 
   const fetchUsers = async () => {
     setLoadingList(true);
@@ -70,8 +56,10 @@ const UsuariosPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (view === 'list') fetchUsers();
-  }, [view]);
+    if (view === 'list' && status === 'authenticated' && currentRole === 'admin') {
+      fetchUsers();
+    }
+  }, [view, status, currentRole]);
 
   const generatePassword = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -88,7 +76,6 @@ const UsuariosPage: React.FC = () => {
     setLoadingSubmit(true);
 
     try {
-      // Usando any para burlar erros de tipagem complexos no client genérico durante o build
       const { data: authData, error: authError } = await (supabase.auth.admin as any).createUser({
         email: formData.email,
         password: formData.senha,

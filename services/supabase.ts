@@ -7,8 +7,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Variáveis VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não definidas. Verifique o ambiente.');
 }
 
-// Cliente exportado sem generics para evitar erros de tipagem 'never' em tempo de build
 export const supabase = createClient(
   supabaseUrl || '', 
-  supabaseAnonKey || ''
+  supabaseAnonKey || '',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false // Previne duplicação de processamento de sessão via URL
+    }
+  }
 );

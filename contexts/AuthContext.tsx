@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import { User, UserRole } from '../types';
 
@@ -52,31 +52,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
         setStatus('initializing');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // CORREÇÃO: Usar getUser() em vez de getSession() para garantir integridade
+        const { data: { user: sbUser }, error } = await supabase.auth.getUser();
 
-        if (error || !session?.user) {
+        if (!mounted) return;
+
+        if (error || !sbUser) {
           setUser(null);
           setRole(null);
           setStatus('unauthenticated');
           return;
         }
 
-        const userRole = await fetchProfileRole(session.user.id);
-        setUser(mapUser(session.user, userRole));
-        setRole(userRole);
-        setStatus('authenticated');
+        const userRole = await fetchProfileRole(sbUser.id);
+        
+        if (mounted) {
+          setUser(mapUser(sbUser, userRole));
+          setRole(userRole);
+          setStatus('authenticated');
+        }
       } catch (err) {
         console.error('Erro crítico no AuthProvider initialize:', err);
-        setStatus('unauthenticated');
+        if (mounted) setStatus('unauthenticated');
       }
     };
 
     initializeAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
       try {
         if (!session?.user) {
           setUser(null);
@@ -86,34 +97,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const userRole = await fetchProfileRole(session.user.id);
-        setUser(mapUser(session.user, userRole));
-        setRole(userRole);
-        setStatus('authenticated');
+        
+        if (mounted) {
+          setUser(mapUser(session.user, userRole));
+          setRole(userRole);
+          setStatus('authenticated');
+        }
       } catch (err) {
         console.error('Erro no listener de auth:', err);
-        setStatus('unauthenticated');
+        if (mounted) setStatus('unauthenticated');
       }
     });
 
     return () => {
+      mounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);
 
   const login = async (email: string, pass: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    return { error };
+    return await supabase.auth.signInWithPassword({ email, password: pass });
   };
 
   const signUp = async (email: string, pass: string) => {
-    const { data, error } = await supabase.auth.signUp({ 
+    return await supabase.auth.signUp({ 
       email, 
       password: pass,
       options: {
         data: { role: 'user' }
       }
     });
-    return { error };
   };
 
   const logout = async () => {
