@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session } from 'https://esm.sh/@supabase/supabase-js@^2.45.0';
 import { useAuth as useSupabaseAuth } from '../hooks/useAuth';
 import { User, UserRole } from '../types';
 

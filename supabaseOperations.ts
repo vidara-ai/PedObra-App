@@ -1,4 +1,3 @@
-// Fix: Removed supabaseAdmin from import as it is not exported by supabaseClient.
 import { supabase } from './supabaseClient';
 import { Database } from './supabaseSchema';
 
@@ -107,7 +106,7 @@ export const dbService = {
       .select();
 
     if (error) throw error;
-    return data;
+    return data || [];
   }
 };
 

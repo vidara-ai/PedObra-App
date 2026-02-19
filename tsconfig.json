@@ -1,34 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ES2022",
+    "useDefineForClassFields": false,
     "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "moduleDetection": "force",
+    "allowJs": true,
     "jsx": "react-jsx",
-    "strict": true
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": [
-    "./index.tsx",
-    "./App.tsx",
-    "./components",
-    "./pages",
-    "./hooks",
-    "./contexts",
-    "./services",
-    "./types.ts",
-    "./constants.tsx",
-    "./vite-env.d.ts"
-  ],
+  "include": ["."],
   "exclude": [
     "node_modules",
     "dist",
     "server",
     "supabase",
-    "functions"
+    "functions",
+    "**/*.test.ts"
   ]
 }

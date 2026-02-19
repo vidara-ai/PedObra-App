@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "composite": true,
-    "noEmit": true
-  },
-  "include": ["./index.tsx", "./App.tsx", "./components", "./pages", "./hooks", "./contexts", "./services", "./types.ts", "./constants.tsx", "./vite-env.d.ts"]
-}
