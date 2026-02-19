@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -9,17 +8,17 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, fallback }) => {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
 
-  if (loading) {
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-[#F97316] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#F97316] animate-spin" />
       </div>
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <>{fallback}</>;
   }
 

@@ -13,17 +13,12 @@ import PedidosPage from './pages/PedidosPage';
 import FornecedoresPage from './pages/FornecedoresPage';
 
 const Router: React.FC = () => {
-  const { user, role, loading } = useAuth();
+  const { user, role, isInitializing, isAuthenticated } = useAuth();
   const location = useLocation();
   const [view, setView] = useState<'landing' | 'login' | 'register'>(
     location.pathname === '/register' ? 'register' : 'landing'
   );
   const [activeTab, setActiveTab] = useState('');
-
-  // Passo 5: Diagnóstico de variáveis de ambiente
-  useEffect(() => {
-    console.log("ENV Check - Supabase URL:", import.meta.env.VITE_SUPABASE_URL ? "Configurada" : "Indefinida");
-  }, []);
 
   // Sincroniza a view com a URL atual
   useEffect(() => {
@@ -34,20 +29,46 @@ const Router: React.FC = () => {
 
   // Sincroniza a aba inicial baseada no papel do usuário
   useEffect(() => {
-    if (user && role) {
+    if (isAuthenticated && role) {
       if (role === 'admin') setActiveTab('dash');
       else setActiveTab('obra-dash');
     }
-  }, [user, role]);
+  }, [isAuthenticated, role]);
 
-  // 1. Se estiver carregando (sessão ou role), não renderiza nada
-  if (loading) return null;
+  // NUNCA retornar null. UI de carregamento pulsante.
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-[#0B0B0B] flex flex-col items-center justify-center p-6">
+        <div className="text-4xl font-black tracking-tighter text-white mb-8 animate-pulse">
+          Ped<span className="text-[#F97316]">Obra</span>
+        </div>
+        <div className="w-full max-w-[200px] flex flex-col items-center gap-3">
+          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-full bg-[#F97316] animate-progress"></div>
+          </div>
+          <p className="text-[#F97316] text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">
+            Inicializando sistema
+          </p>
+        </div>
+        <style>{`
+          @keyframes progress {
+            0% { transform: translateX(-100%); width: 30%; }
+            50% { width: 50%; }
+            100% { transform: translateX(350%); width: 30%; }
+          }
+          .animate-progress {
+            animation: progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
-  // Permite acesso ao registro mesmo se estiver logado (para o fluxo secreto do admin)
+  // Permite acesso ao registro (fluxo secreto)
   if (view === 'register') return <LoginPage initialRegister={true} />;
 
-  // 2. Se não houver usuário, renderiza Landing ou Login
-  if (!user) {
+  // Se não estiver autenticado, Landing ou Login
+  if (!isAuthenticated) {
     if (view === 'login') return <LoginPage />;
     
     return (
@@ -63,7 +84,7 @@ const Router: React.FC = () => {
               Ped<span className="text-[#F97316]">Obra</span>
             </div>
             <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} PedObra Sistemas. Industrial MVP.
+              &copy; {new Date().getFullYear()} PedObra Sistemas. Industrial Premium.
             </p>
           </div>
         </footer>
@@ -71,7 +92,18 @@ const Router: React.FC = () => {
     );
   }
 
-  // 3. Se houver usuário e role carregado, renderiza o Sistema Protegido
+  // Se estiver autenticado mas sem role definido ainda
+  if (!role) {
+    return (
+      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
+        <div className="text-gray-500 text-xs font-black uppercase tracking-widest animate-pulse">
+          Carregando permissões...
+        </div>
+      </div>
+    );
+  }
+
+  // Sistema Protegido
   const renderDashboardContent = () => {
     switch (activeTab) {
       case 'obras': return <ObrasPage />;
@@ -109,7 +141,11 @@ const Router: React.FC = () => {
           <PedidosPage />
         </div>
       );
-      default: return <div className="p-20 text-center text-gray-500 uppercase font-black tracking-tighter text-4xl opacity-10">Selecione um módulo</div>;
+      default: return (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+          <p className="text-gray-700 uppercase font-black tracking-tighter text-4xl opacity-20">Aguardando Módulo</p>
+        </div>
+      );
     }
   };
 
