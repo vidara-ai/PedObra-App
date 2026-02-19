@@ -41,7 +41,7 @@ export const dbService = {
   },
 
   // CRIAR NOVO PEDIDO COM ITENS (Transação no Frontend)
-  async createPedido(pedido: Tables['pedidos']['Insert'], itens: Tables['pedido_itens']['Insert'][]) {
+  async createPedido(pedido: any, itens: any[]) {
     try {
       // 1. Inserir o Pedido
       const { data: newPedido, error: pError } = await supabase

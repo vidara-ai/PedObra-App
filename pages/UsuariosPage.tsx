@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Check, Loader2, Key, Shield, User as UserIcon, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { User, UserRole } from '../types';
 
-// Fix: Complete the component definition and add the default export to resolve "no default export" and "not assignable to FC" errors.
 const UsuariosPage: React.FC = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'create'>('list');
@@ -23,7 +21,6 @@ const UsuariosPage: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
 
-  // Verificação de acesso: Apenas administradores podem acessar esta página
   useEffect(() => {
     const checkAccess = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -91,8 +88,8 @@ const UsuariosPage: React.FC = () => {
     setLoadingSubmit(true);
 
     try {
-      // Cria o usuário no Auth usando a API Admin (mesma lógica da página secreta)
       // Nota: auth.admin requer privilégios de service_role que podem não estar no anon client.
+      // Corrigindo para usar optional chaining no retorno dos dados
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: formData.email,
         password: formData.senha,
@@ -104,11 +101,10 @@ const UsuariosPage: React.FC = () => {
         throw new Error(authError.message);
       }
 
-      if (!authData.user) {
+      if (!authData?.user) {
         throw new Error('Usuário não foi criado.');
       }
 
-      // Cria registro na tabela profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
