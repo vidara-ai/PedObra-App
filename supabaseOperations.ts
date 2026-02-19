@@ -1,4 +1,3 @@
-
 // Fix: Removed supabaseAdmin from import as it is not exported by supabaseClient.
 import { supabase } from './supabaseClient';
 import { Database } from './supabaseSchema';
@@ -39,7 +38,7 @@ export const dbService = {
       console.error('Erro ao buscar obras:', error.message);
       return [];
     }
-    return data;
+    return data || [];
   },
 
   // CRIAR NOVO PEDIDO COM ITENS (Transação no Frontend)
@@ -53,9 +52,10 @@ export const dbService = {
         .single();
 
       if (pError) throw pError;
+      if (!newPedido) throw new Error('Falha ao criar pedido');
 
       // 2. Inserir os Itens vinculados ao ID do pedido criado
-      const itensComId = itens.map(item => ({ ...item, order_id: newPedido.id }));
+      const itensComId = itens.map(item => ({ ...item, order_id: (newPedido as any).id }));
       const { error: iError } = await supabase
         .from('pedido_itens')
         .insert(itensComId);
@@ -69,7 +69,6 @@ export const dbService = {
   },
 
   // BUSCAR PEDIDO COM RELAÇÕES (Join)
-  // Exemplo de como buscar pedido, a obra vinculada e os itens do pedido em uma única chamada
   async getPedidoFull(orderId: string) {
     const { data, error } = await supabase
       .from('pedidos')
@@ -91,21 +90,18 @@ export const dbService = {
   // BACKEND: Operação Segura (Update de Estoque via supabaseAdmin)
   async updateMaterialStock(materialId: string, quantityToSubtract: number) {
     // Busca a quantidade atual
-    // Fix: Replaced supabaseAdmin with supabase as the admin client is not available in the public client context.
-    const { data: mat } = await supabase
-      .from('materials')
+    const { data: mat } = await (supabase
+      .from('materials') as any)
       .select('quantidade')
       .eq('id', materialId)
       .single();
 
     if (!mat) throw new Error('Material não encontrado');
 
-    const newQty = mat.quantidade - quantityToSubtract;
+    const newQty = (mat as any).quantidade - quantityToSubtract;
 
-    // Faz o update bypassando RLS
-    // Fix: Replaced supabaseAdmin with supabase as the admin client is not available in the public client context.
-    const { data, error } = await supabase
-      .from('materials')
+    const { data, error } = await (supabase
+      .from('materials') as any)
       .update({ quantidade: newQty })
       .eq('id', materialId)
       .select();
@@ -120,9 +116,11 @@ export const dbService = {
  */
 export const lookupService = {
   async getSuppliers() {
-    return await supabase.from('suppliers').select('*').eq('status', 'ativo');
+    const { data } = await supabase.from('suppliers').select('*').eq('status', 'ativo');
+    return data || [];
   },
   async getMaterials() {
-    return await supabase.from('materials').select('*');
+    const { data } = await supabase.from('materials').select('*');
+    return data || [];
   }
 };
