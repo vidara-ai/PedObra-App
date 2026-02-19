@@ -1,11 +1,9 @@
 import { supabase } from './supabaseClient';
 import { Database } from './supabaseSchema';
 
+// Usamos as interfaces do schema para tipagem local, mas o cliente permanece genérico
 type Tables = Database['public']['Tables'];
 
-/**
- * 1. AUTENTICAÇÃO (Frontend - React)
- */
 export const authService = {
   async login(email: string, pass: string) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
@@ -13,20 +11,16 @@ export const authService = {
     return data;
   },
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) return null;
-    return user;
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data) return null;
+    return data.user;
   },
   async logout() {
     await supabase.auth.signOut();
   }
 };
 
-/**
- * 2. OPERAÇÕES DE NEGÓCIO (CRUD)
- */
 export const dbService = {
-  // BUSCAR TODAS AS OBRAS
   async getObras() {
     const { data, error } = await supabase
       .from('obras')
@@ -40,10 +34,8 @@ export const dbService = {
     return data || [];
   },
 
-  // CRIAR NOVO PEDIDO COM ITENS (Transação no Frontend)
   async createPedido(pedido: any, itens: any[]) {
     try {
-      // 1. Inserir o Pedido
       const { data: newPedido, error: pError } = await supabase
         .from('pedidos')
         .insert(pedido)
@@ -53,7 +45,6 @@ export const dbService = {
       if (pError) throw pError;
       if (!newPedido) throw new Error('Falha ao criar pedido');
 
-      // 2. Inserir os Itens vinculados ao ID do pedido criado
       const itensComId = itens.map(item => ({ ...item, order_id: (newPedido as any).id }));
       const { error: iError } = await supabase
         .from('pedido_itens')
@@ -67,7 +58,6 @@ export const dbService = {
     }
   },
 
-  // BUSCAR PEDIDO COM RELAÇÕES (Join)
   async getPedidoFull(orderId: string) {
     const { data, error } = await supabase
       .from('pedidos')
@@ -86,16 +76,14 @@ export const dbService = {
     return data;
   },
 
-  // BACKEND: Operação Segura (Update de Estoque via supabaseAdmin)
   async updateMaterialStock(materialId: string, quantityToSubtract: number) {
-    // Busca a quantidade atual
-    const { data: mat } = await (supabase
+    const { data: mat, error: fetchError } = await (supabase
       .from('materials') as any)
       .select('quantidade')
       .eq('id', materialId)
       .single();
 
-    if (!mat) throw new Error('Material não encontrado');
+    if (fetchError || !mat) throw new Error('Material não encontrado');
 
     const newQty = (mat as any).quantidade - quantityToSubtract;
 
@@ -110,9 +98,6 @@ export const dbService = {
   }
 };
 
-/**
- * 3. EXEMPLO DE BUSCA POR TABELAS ESPECÍFICAS
- */
 export const lookupService = {
   async getSuppliers() {
     const { data } = await supabase.from('suppliers').select('*').eq('status', 'ativo');

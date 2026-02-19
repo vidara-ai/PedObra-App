@@ -17,13 +17,26 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["."],
+  "include": [
+    "index.tsx",
+    "App.tsx",
+    "components/**/*",
+    "pages/**/*",
+    "services/**/*",
+    "hooks/**/*",
+    "contexts/**/*",
+    "constants.tsx",
+    "types.ts",
+    "vite-env.d.ts",
+    "supabaseClient.ts",
+    "supabaseOperations.ts",
+    "supabaseSchema.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
     "server",
-    "supabase",
-    "functions",
+    "supabase/functions",
     "**/*.test.ts"
   ]
 }

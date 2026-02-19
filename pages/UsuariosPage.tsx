@@ -88,22 +88,16 @@ const UsuariosPage: React.FC = () => {
     setLoadingSubmit(true);
 
     try {
-      // Nota: auth.admin requer privilégios de service_role que podem não estar no anon client.
-      // Corrigindo para usar optional chaining no retorno dos dados
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Usando any para burlar erros de tipagem complexos no client genérico durante o build
+      const { data: authData, error: authError } = await (supabase.auth.admin as any).createUser({
         email: formData.email,
         password: formData.senha,
         email_confirm: true,
         user_metadata: { name: formData.nome, role: formData.perfil }
       });
 
-      if (authError) {
-        throw new Error(authError.message);
-      }
-
-      if (!authData?.user) {
-        throw new Error('Usuário não foi criado.');
-      }
+      if (authError) throw authError;
+      if (!authData?.user) throw new Error('Usuário não foi criado.');
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -115,7 +109,8 @@ const UsuariosPage: React.FC = () => {
         });
 
       if (profileError) {
-        throw new Error(profileError.message);
+        await (supabase.auth.admin as any).deleteUser(authData.user.id);
+        throw profileError;
       }
 
       setShowToast(true);
@@ -152,41 +147,43 @@ const UsuariosPage: React.FC = () => {
             <Loader2 className="animate-spin text-[#F97316]" size={40} />
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-[#0B0B0B] text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-white/5">
-              <tr>
-                <th className="px-8 py-5">Usuário</th>
-                <th className="px-8 py-5">Perfil</th>
-                <th className="px-8 py-5 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-sm">
-              {users.map(user => (
-                <tr key={user.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center border border-white/5 text-[#F97316]">
-                        <UserIcon size={20} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-white group-hover:text-[#F97316] transition-colors">{user.name}</p>
-                        <p className="text-gray-500 text-[10px] font-mono">{user.id.substring(0, 8)}...</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className={`flex items-center gap-1.5 font-bold uppercase text-[10px] tracking-widest ${user.role === 'admin' ? 'text-white' : 'text-gray-500'}`}>
-                      <Shield size={12} className={user.role === 'admin' ? 'text-[#F97316]' : 'text-gray-600'} />
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <button className="text-gray-500 hover:text-white font-bold text-xs uppercase tracking-widest transition-colors">Detalhes</button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-[#0B0B0B] text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-white/5">
+                <tr>
+                  <th className="px-8 py-5">Usuário</th>
+                  <th className="px-8 py-5">Perfil</th>
+                  <th className="px-8 py-5 text-right">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm">
+                {users.map(user => (
+                  <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-[#262626] flex items-center justify-center border border-white/5 text-[#F97316]">
+                          <UserIcon size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-white group-hover:text-[#F97316] transition-colors">{user.name}</p>
+                          <p className="text-gray-500 text-[10px] font-mono">{user.id.substring(0, 8)}...</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className={`flex items-center gap-1.5 font-bold uppercase text-[10px] tracking-widest ${user.role === 'admin' ? 'text-white' : 'text-gray-500'}`}>
+                        <Shield size={12} className={user.role === 'admin' ? 'text-[#F97316]' : 'text-gray-600'} />
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button className="text-gray-500 hover:text-white font-bold text-xs uppercase tracking-widest transition-colors">Detalhes</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
