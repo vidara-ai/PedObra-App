@@ -20,6 +20,11 @@ const Router: React.FC = () => {
   );
   const [activeTab, setActiveTab] = useState('');
 
+  // Passo 5: Diagnóstico de variáveis de ambiente
+  useEffect(() => {
+    console.log("ENV Check - Supabase URL:", import.meta.env.VITE_SUPABASE_URL ? "Configurada" : "Indefinida");
+  }, []);
+
   // Sincroniza a view com a URL atual
   useEffect(() => {
     if (location.pathname === '/register') setView('register');
